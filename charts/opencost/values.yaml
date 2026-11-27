@@ -880,21 +880,21 @@ opencost:
 
   # -- extra sidecars to add to the pod.  Useful for things like oauth-proxy for the UI
   extraContainers: []
-    # - name: oauth-proxy
-    #   image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
-    #   args:
-    #     - --upstream=http://127.0.0.1:9090
-    #     - --http-address=0.0.0.0:8081
-    #     - --metrics-address=0.0.0.0:8082
-    #     - ...
-    #   ports:
-    #     - name: oauth-proxy
-    #       containerPort: 8081
-    #       protocol: TCP
-    #     - name: oauth-metrics
-    #       containerPort: 8082
-    #       protocol: TCP
-    #   resources: {}
+     - name: oauth-proxy
+       image: quay.io/oauth2-proxy/oauth2-proxy:v7.5.1
+       args:
+        - --upstream=http://127.0.0.1:9090
+         - --http-address=0.0.0.0:8081
+        - --metrics-address=0.0.0.0:8082
+         - ...
+      ports:
+         - name: oauth-proxy
+           containerPort: 8081
+           protocol: TCP
+         - name: oauth-metrics
+           containerPort: 8082
+           protocol: TCP
+       resources: {}
 
   updateCaTrust:
     enabled: false
@@ -907,7 +907,8 @@ opencost:
       readOnlyRootFilesystem: true
       seccompProfile:
         type: RuntimeDefault
-    caCertsSecret: ca-certs-secret # The name of the Secret containing custom CA certificates to mount to the opencost container.
+    caCertsSecret: ca-certs-secret
+   # The name of the Secret containing custom CA certificates to mount to the opencost container.
     # caCertsConfig: ca-certs-config  # The name of the ConfigMap containing the CA trust configuration.
     resources: {}
 
@@ -933,70 +934,82 @@ extraVolumes: []
 
 # -- Array of extra K8s manifests rendered through `tpl` and owned by the release.
 extraObjects: []
-  # - apiVersion: external-secrets.io/v1beta1
-  #   kind: ExternalSecret
-  #   metadata:
-  #     name: '{{ include "opencost.fullname" . }}-cloud-integration'
+   - apiVersion: external-secrets.io/v1beta1
+     kind: ExternalSecret
+     metadata:
+       name: '{{ include "opencost.fullname" . }}-cloud-integration'
 
 # External labels allow users to apply custom labels to node assets and
 # allocations.
 #
 # The OpenCost deployment can read external labels from an existing ConfigMap.
-#
-# Supported ConfigMap formats:
-#
+
+ Supported ConfigMap formats:
+
 # 1. Traditional ConfigMap
-#
-#    data:
-#      cluster: prod
-#      env: dev
-#      region: nam
-#
+
+    data:
+      cluster: prod
+     env: dev
+      region: nam
+
 #    In this case, labels are read directly from ConfigMap.data. The
 #    key and route fields are optional and may be omitted.
-#
-# 2. Block-scalar ConfigMap
-#
-#    data:
-#      config.yaml: |
-#        metadata:
-#          externalLabels:
-#            cluster: prod
-#            env: dev
-#            region: nam
-#
+
+ #2. Block-scalar ConfigMap
+
+    data:
+      config.yaml: |
+       metadata:
+          externalLabels:
+            cluster: prod
+            env: dev
+            region: nam
+
 #    In this case, specify the key that contains the YAML document and
 #    a dot-separated route to the labels map within it.
-#
-# Fields:
-#   configMapName - name of the ConfigMap to read.
-#   namespace     - namespace of the ConfigMap. Defaults to the agent's
-#                   own namespace if left empty.
-#   key           - Optional. The ConfigMap data key containing the YAML
-#                   document. Required only for block-scalar ConfigMaps.
-#   route         - Optional. Dot-separated path to the labels map within
-#                   the key's YAML content, e.g. "metadata.externalLabels".
-#                   When omitted or empty, labels are read directly from
-#                   ConfigMap.data (traditional ConfigMap).
-#
-# Traditional ConfigMap example:
-#
-# external:
-#   nodeLabels:
-#     configMapName: external-label-configmap
-#     namespace: ""
-#
+
+ #Fields:
+ # configMapName - name of the ConfigMap to read.
+ # namespace     - namespace of the ConfigMap. Defaults to the agent's
+ #                 own namespace if left empty.
+ #  key           - Optional. The ConfigMap data key containing the YAML
+ #                document. Required only for block-scalar ConfigMaps.
+ # route         - Optional. Dot-separated path to the labels map within
+ #                the key's YAML content, e.g. "metadata.externalLabels".
+ #                 When omitted or empty, labels are read directly from
+ #                 ConfigMap.data (traditional ConfigMap).
+
+ Traditional ConfigMap example:
+
+ external:
+   nodeLabels:
+     configMapName: external-label-configmap
+     namespace: opencost
 # Block-scalar ConfigMap example:
-#
-# external:
-#   nodeLabels:
-#     configMapName: external-label-configmap
-#     namespace: ""
-#     key: config.yaml
-#     route: metadata.externalLabels
+
+ external:
+  nodeLabels:
+     configMapName: external-label-configmap
+     namespace: ""
+     key: config.yaml
+     route: metadata.externalLabels
 external:
   nodeLabels:
     configMapName: ""
     namespace: ""
     key: ""
     route: ""
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: external-label-configmap
+  namespace: opencost
+data:
+  config.yaml: |
+    metadata:
+      externalLabels:
+        cluster: prod
+        env: dev
+        region: nam
